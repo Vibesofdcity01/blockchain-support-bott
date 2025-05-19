@@ -11,6 +11,10 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 logger = logging.getLogger(__name__)
 
 # Bot token
+from dotenv import load_dotenv
+import os
+
+load_dotenv()  # Load environment variables from .env
 TOKEN = os.environ.get("BOT_TOKEN")
 
 # Admin ID
