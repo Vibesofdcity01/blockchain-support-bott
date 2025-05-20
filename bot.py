@@ -58,7 +58,12 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
-    await query.answer()
+    try:
+        await query.answer()
+    except Exception as e:
+        logger.warning(f"Failed to answer callback query: {str(e)}")
+        return  # Skip processing if the query is invalid
+
     user_id = query.from_user.id
     data = query.data
 
